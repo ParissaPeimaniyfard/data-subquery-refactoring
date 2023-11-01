@@ -2,7 +2,7 @@
 import sqlite3
 
 conn = sqlite3.connect('data/ecommerce.sqlite')
-db = conn.cursor()
+dbb = conn.cursor()
 
 
 def get_average_purchase(db):
@@ -87,7 +87,27 @@ order by cum.cumulative_amount DESC
 def top_ordered_product_per_customer(db):
     # return the list of the top ordered product by each customer
     # based on the total ordered amount in USD
-    pass  # YOUR CODE HERE
+    query = '''
+    with base as (
+	SELECT customers.CustomerID as cus_id, orderdetails.ProductID as pr_id,
+		SUM(orderdetails.UnitPrice * orderdetails.Quantity) as amount,
+		RANK ()over (
+		PARTITION by customers.CustomerID
+		ORDER BY SUM(orderdetails.UnitPrice * orderdetails.Quantity) DESC
+		) as rnk
+		FROM OrderDetails
+		join Orders on orderdetails.OrderID = orders.OrderID
+		JOIN Customers on orders.CustomerID = customers.CustomerID
+		GROUP BY  customers.CustomerID , orderdetails.ProductID
+)
+	SELECT
+	base.cus_id, base.pr_id, ROUND(base.amount , 2) FROM base
+	where rnk = 1
+	order by base.amount DESC
+    '''
+    db.execute(query)
+    results = db.fetchall()
+    return results
 
 def average_number_of_days_between_orders(db):
     # return the average number of days between two consecutive orders of the same customer
@@ -97,4 +117,5 @@ def average_number_of_days_between_orders(db):
 
 #print(get_average_purchase(db))
 #print(get_general_avg_order(db))
-print(best_customers(db))
+#print(best_customers(db))
+#print(top_ordered_product_per_customer(db))
