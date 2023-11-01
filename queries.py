@@ -111,7 +111,22 @@ def top_ordered_product_per_customer(db):
 
 def average_number_of_days_between_orders(db):
     # return the average number of days between two consecutive orders of the same customer
-    pass  # YOUR CODE HERE
+    query = '''
+    with base as (
+	SELECT orders.OrderDate as od , orders.CustomerID,
+	LAG(orders.OrderDate, 1 ,0) OVER (
+	PARTITION  BY orders.CustomerID
+	Order BY orders.OrderDate
+	) as diff
+	from Orders
+	)
+	select ROUND(AVG(JULIANDAY(base.od) - JULIANDAY(base.diff))) as av
+	from base
+	WHERE base.diff != 0
+    '''
+    db.execute(query)
+    results = db.fetchall()
+    return int(results[0][0])
 
 
 
